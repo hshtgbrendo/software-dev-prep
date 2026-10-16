@@ -14,17 +14,17 @@ This isn't your typical cabbage diet soup. It's a complete, satisfying meal pack
 
 ## Ingredients
 
-- 12 oz smoked sausage, sliced into rounds (kielbasa or andouille)
-- 2 cups cooked shredded chicken (rotisserie chicken works great)
+- 12 oz smoked sausage, sliced into rounds (kielbasa or andouille)*
+- 2 cups cooked shredded chicken (rotisserie chicken works great)*
 - 2 tbsp olive oil, if needed
 - 1 medium yellow onion, diced
 - 2 carrots, sliced
 - 2–3 celery stalks, sliced
 - 5 cloves garlic, minced
-- 1 tbsp tomato paste
+- 1 tbsp tomato paste*
 - 1 can (14.5 oz) diced tomatoes, with juices
-- 1–2 cans (15 oz) cannellini beans, drained and rinsed
-- ½ medium green cabbage, chopped into bite-sized pieces (about 5–6 cups)
+- 1–2 cans (15 oz) cannellini beans, drained and rinsed*
+- ½ medium green cabbage, chopped into bite-sized pieces (about 5–6 cups)*
 - 6 cups low-sodium chicken broth
 - 2 bay leaves
 - 1 tsp smoked paprika

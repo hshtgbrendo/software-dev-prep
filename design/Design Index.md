@@ -8,7 +8,9 @@ created: 2026-10-16
 > [!abstract] What this is
 > A complete refresher on **software design, architecture, design patterns, and system design** for entry- to mid-level software engineering roles, written with FAANG-style interviews **and** day-to-day enterprise work in mind. Code examples are in JavaScript/TypeScript.
 >
-> Every note has: a summary callout → core content with examples and diagrams → tradeoff tables → a **self-test checklist** at the bottom.
+> Every note is written to **teach** the topic, not just remind you of it: what problem each concept solves → how it works (with JS examples and diagrams) → when to use it and when not to → common pitfalls → a **self-test checklist** at the bottom.
+>
+> **How to study:** read a note top to bottom once, then come back later and answer its self-test questions out loud without looking. Anything you can't explain, reread. Use [[Glossary & Cheat Sheet]] as a final review.
 
 ---
 
@@ -30,20 +32,20 @@ created: 2026-10-16
 ---
 
 ## Part 1: Software Design (code level)
-| # | Note | Covers |
-|---|---|---|
-| 1.1 | [[OOP Fundamentals]] | 4 pillars, composition vs inheritance, class relationships/UML, coupling & cohesion, DI |
-| 1.2 | [[SOLID Principles]] | SRP, OCP, LSP, ISP, DIP with violation → fix examples |
-| 1.3 | [[Design Principles]] | DRY, KISS, YAGNI, Law of Demeter, clean code, code smells, tech debt |
-| 1.4 | [[Creational Patterns]] | Singleton, Factory, Abstract Factory, Builder, Prototype |
-| 1.5 | [[Structural Patterns]] | Adapter, Decorator, Facade, Proxy, Composite, Bridge, Flyweight |
-| 1.6 | [[Behavioral Patterns]] | Strategy, Observer, Command, State, Template, Iterator, Chain of Resp., etc. + pattern picker table |
-| 1.7 | [[Low-Level Design Interview]] | LLD framework, **worked parking lot example**, practice list, checklist |
+| #   | Note                           | Covers                                                                                                                                                                        |
+| --- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.1 | [[OOP Fundamentals]]           | 4 pillars, composition vs inheritance, class relationships/UML, coupling & cohesion, DI                                                                                       |
+| 1.2 | [[SOLID Principles]]           | SRP, OCP, LSP, ISP, DIP with violation → fix examples                                                                                                                         |
+| 1.3 | [[Design Principles]]          | DRY, KISS, YAGNI, Law of Demeter, clean code, code smells, tech debt                                                                                                          |
+| 1.4 | [[Creational Patterns]]        | Singleton, Factory, Abstract Factory, Builder, Prototype                                                                                                                      |
+| 1.5 | [[Structural Patterns]]        | Adapter, Decorator, Facade, Proxy, Composite, Bridge, Flyweight                                                                                                               |
+| 1.6 | [[Behavioral Patterns]]        | Strategy, Observer, Command, State, Template Method, Iterator, Chain of Responsibility, Mediator, Memento, Visitor, enterprise patterns (Repository, DTO...) + pattern picker |
+| 1.7 | [[Low-Level Design Interview]] | LLD framework, **worked parking lot example**, practice list, checklist                                                                                                       |
 
 ## Part 2: Architecture
 | # | Note | Covers |
 |---|---|---|
-| 2.1 | [[Architectural Styles]] | Layered, MVC/MVVM, monolith vs microservices, EDA, CQRS, hexagonal/clean, serverless |
+| 2.1 | [[Architectural Styles]] | Layered, MVC/MVVM, monolith, modular monolith, microservices (+ strangler fig migration), EDA, CQRS/event sourcing, hexagonal/clean, serverless |
 | 2.2 | [[API Design]] | REST (methods, status codes, pagination, idempotency, versioning), GraphQL, gRPC, WebSockets/SSE/webhooks |
 | 2.3 | [[Domain-Driven Design]] | Bounded contexts, entities vs value objects, aggregates, domain events |
 
@@ -57,7 +59,7 @@ created: 2026-10-16
 | 3.5 | [[Databases & Storage]] | SQL vs NoSQL, indexes, isolation levels, locking, replication, sharding, object storage |
 | 3.6 | [[Caching]] | Cache layers, cache-aside/write-through/write-behind, eviction, stampede, Redis |
 | 3.7 | [[Messaging & Event Streaming]] | Queues vs pub/sub vs Kafka, delivery semantics, DLQ, outbox |
-| 3.8 | [[Distributed Systems Patterns]] | Idempotency, consistent hashing, IDs, 2PC vs saga, Raft, locks, clocks, Bloom filters |
+| 3.8 | [[Distributed Systems Patterns]] | Idempotency, consistent hashing, IDs, 2PC vs saga, Raft, leader election, locks + fencing tokens, clocks, CRDTs, gossip, Bloom filters, HyperLogLog, geo indexes |
 | 3.9 | [[Reliability & Observability]] | Timeouts/retries/circuit breakers, SLOs & error budgets, logs/metrics/traces, incidents |
 | 3.10 | [[Security Fundamentals]] | AuthN/AuthZ, sessions vs JWT, OAuth/OIDC, passwords, encryption, OWASP Top 10 |
 
@@ -76,7 +78,7 @@ created: 2026-10-16
 | Note | Covers |
 |---|---|
 | [[Design Docs & Code Review]] | Design doc template, Amazon 6-pager/PR-FAQ, ADRs, code review checklist, agile |
-| [[Testing Strategy]] | Test pyramid, test doubles, TDD, contract tests, coverage |
+| [[Testing Strategy]] | Test levels (unit, integration, contract, E2E), pyramid vs trophy, test doubles, good-test habits, flaky tests, TDD/BDD, coverage |
 | [[CI-CD & Deployment]] | Git workflows, CI/CD, canary/blue-green, feature flags, zero-downtime migrations, Docker, Kubernetes, IaC, cloud services map |
 
 ## Reference

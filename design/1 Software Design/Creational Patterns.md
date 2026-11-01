@@ -1,158 +1,352 @@
 ---
 tags: [design, design-patterns, creational]
-aliases: [Singleton, Factory, Builder, Abstract Factory, Prototype]
+aliases: [Singleton, Factory, Builder, Abstract Factory, Prototype, Design Patterns]
 ---
 # Creational Design Patterns
 
-> [!summary]
-> Creational patterns deal with **how objects get created**: decoupling *what* you create from *how* you create it. From the "Gang of Four" (GoF) book, *Design Patterns* (1994), which has 23 patterns in 3 groups: Creational (5), [[Structural Patterns|Structural]] (7), [[Behavioral Patterns|Behavioral]] (11).
+> [!summary] What you'll learn
+> A **design pattern** is a named, reusable solution to a problem that keeps coming up in software design. Patterns give teams a shared vocabulary ("let's put a factory here") and capture decades of trial and error. The classic catalog is *Design Patterns: Elements of Reusable Object-Oriented Software* (1994) by the "Gang of Four" (GoF): 23 patterns in three groups:
+> - **Creational** (this note): *how objects get created*
+> - **[[Structural Patterns|Structural]]**: *how objects are composed into larger structures*
+> - **[[Behavioral Patterns|Behavioral]]**: *how objects communicate and share responsibilities*
+>
+> **Creational patterns** separate *what* gets created from *how and when* it's created, so the rest of your code doesn't depend on concrete classes or messy construction logic.
 
-Back to [[Design Index]]
+Back to [[Design Index]] · Prev: [[Design Principles]] · Next: [[Structural Patterns]]
 
-> [!tip] How to study patterns
-> For each pattern know: **the problem it solves → the structure (1 sentence) → a real example you've seen → a downside**. Interviewers care more that you can *recognize when to apply one* than that you recite UML.
+> [!tip] How to study each pattern
+> For every pattern, be able to answer:
+> 1. **What problem does it solve?** (the pain without it)
+> 2. **How does it work?** (one sentence + a sketch)
+> 3. **When would I use it?** (concrete signals)
+> 4. **Where have I seen it?** (frameworks, libraries)
+> 5. **What's the downside?**
+>
+> Interviewers care far more that you **recognize when a pattern fits** than that you can draw the exact UML from the book.
+
+> [!note] Patterns in JavaScript
+> The GoF book targeted C++ and Smalltalk, where classes are the only tool. In JavaScript, first-class functions, closures, object literals, and modules make several patterns much lighter (sometimes a single function). The *problem* each pattern solves stays the same.
 
 ---
 
 ## Singleton
 
-**Intent:** Ensure a class has only **one instance** and provide a global access point.
+### The problem
+Some things should exist **exactly once** in a running program, and many parts of the code need access to that single instance:
+- A **configuration** object loaded from files and environment variables.
+- A **database connection pool** (creating several pools would open far too many connections).
+- A **logger** writing to one destination.
+- An in-process **cache**.
 
-**Real uses:** config objects, logger, connection pool, cache client.
+If any code can call `new ConnectionPool()`, you can accidentally end up with ten pools and exhaust the database's connection limit.
+
+### How it works
+The class controls its own instantiation: the constructor is private (or guarded), and a static method returns the one shared instance, creating it lazily on first use.
 
 ```javascript
 class Config {
-  static #instance;
+  static #instance = null;
+
   constructor() {
-    if (Config.#instance) return Config.#instance;
-    this.settings = { env: process.env.NODE_ENV };
-    Config.#instance = this;
+    if (Config.#instance) throw new Error("Use Config.getInstance()");
+    this.values = { env: process.env.NODE_ENV ?? "development", port: Number(process.env.PORT ?? 3000) };
   }
-  static getInstance() { return Config.#instance ?? new Config(); }
+
+  static getInstance() {
+    if (!Config.#instance) Config.#instance = new Config();   // lazy initialization
+    return Config.#instance;
+  }
 }
 
-// In Node, the module system already gives you a singleton:
-// db.js
-//   const pool = new Pool(); module.exports = pool;   // cached after first require
+Config.getInstance() === Config.getInstance(); // true
 ```
 
-**Downsides (frequently asked!):**
-- It's **global state** in disguise: hidden dependencies, hard to test (can't easily swap in a mock).
-- Thread-safety issues in multithreaded languages (Java needs double-checked locking or an enum singleton).
-- Violates SRP (manages its own lifecycle + does its job).
+**In Node.js you get singletons for free from the module system.** A module is evaluated once and cached, so every `import` receives the same object:
 
-> [!note] Modern take
-> Prefer letting a **DI container** manage a single instance ("singleton scope") and inject it. You get one instance *without* global access.
+```javascript
+// db.js
+import { Pool } from "pg";
+export const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 10 });
+
+// anywhere else
+import { pool } from "./db.js";   // same pool everywhere
+```
+
+### When to use it
+- The resource is genuinely **one-per-process** by nature (pool, config, hardware device handle).
+- Creating more than one would be **wrong or wasteful**, not merely unnecessary.
+
+### Downsides (this is one of the most-asked pattern questions)
+1. **It's global state in disguise.** Any code can reach it, so dependencies become hidden: you can't tell from a function's signature that it uses the database.
+2. **Hard to test.** Tests can't easily substitute a fake, and state leaks between tests because the instance persists.
+3. **Violates SRP**: the class manages its own lifecycle *and* does its real job.
+4. **Concurrency issues** in multithreaded languages: two threads can both see "no instance yet" and create two. Java solutions include eager initialization, double-checked locking with `volatile`, or an `enum` singleton.
+
+### The modern alternative
+Let your **composition root** or **DI container** create one instance and **inject it** wherever it's needed ("singleton scope" in Spring/NestJS/.NET). You keep the "only one instance" benefit without the global access and the testing problems.
 
 ---
 
-## Factory Method
+## Factory Method (and the "Simple Factory")
 
-**Intent:** Define an interface for creating an object, but let subclasses/logic **decide which class to instantiate**.
+### The problem
+Code often needs to create one of several related classes depending on runtime information:
 
 ```javascript
-class NotificationFactory {
-  static create(channel) {
-    switch (channel) {
-      case "email": return new EmailNotification();
-      case "sms":   return new SmsNotification();
-      case "push":  return new PushNotification();
-      default: throw new Error(`Unknown channel ${channel}`);
-    }
-  }
-}
-const n = NotificationFactory.create(user.preferredChannel);
-n.send(user, "Your order shipped");
+// Scattered across the codebase...
+let notifier;
+if (user.pref === "email") notifier = new EmailNotifier(smtpConfig);
+else if (user.pref === "sms") notifier = new SmsNotifier(twilioKey);
+else if (user.pref === "push") notifier = new PushNotifier(fcmCreds);
 ```
+Problems:
+- Every place that creates notifiers **knows every concrete class** and its constructor arguments.
+- Adding a new type means finding and editing every such `if/else`.
+- Construction details (config, credentials) leak into business code.
 
-(Strictly speaking, that's a **Simple Factory**. The GoF *Factory Method* uses subclassing: `Dialog.createButton()` overridden by `WindowsDialog` and `WebDialog`. In interviews, "factory" usually means either.)
+### How it works
+**Put creation logic in one place** that returns objects through a common interface. Callers ask for "a notifier for this channel" and get back something with `.send()`.
 
-**When:** creation logic is complex or conditional, or callers shouldn't know concrete classes.
-**Downside:** another layer of indirection; a switch-based factory still has to change when you add types (you can use a registry map instead).
+**Simple Factory** (the most common form in practice):
+```javascript
+const notifierFactories = {
+  email: () => new EmailNotifier(config.smtp),
+  sms:   () => new SmsNotifier(config.twilio),
+  push:  () => new PushNotifier(config.fcm),
+};
+
+function createNotifier(channel) {
+  const make = notifierFactories[channel];
+  if (!make) throw new Error(`Unsupported channel: ${channel}`);
+  return make();
+}
+
+// Caller code: knows nothing about concrete classes or credentials
+createNotifier(user.pref).send(user, "Your order shipped!");
+```
+Using a **registry map** instead of a `switch` means a new channel only requires adding one entry (Open/Closed).
+
+**GoF Factory Method** (the formal version) uses subclassing. A base class defines an abstract "create" method, and each subclass decides which concrete product to create:
+
+```javascript
+class Dialog {
+  render() {
+    const button = this.createButton();   // factory method: subclasses decide
+    button.onClick(() => this.close());
+    button.draw();
+  }
+  createButton() { throw new Error("subclass must implement"); }
+}
+class WebDialog extends Dialog     { createButton() { return new HtmlButton(); } }
+class WindowsDialog extends Dialog { createButton() { return new WindowsButton(); } }
+```
+The base class contains shared logic (`render`) and lets subclasses plug in the specific product.
+
+### When to use it
+- Which class to create depends on **runtime data** (config, user input, file type).
+- Construction is **complex** (needs config, credentials, several steps) and shouldn't be repeated.
+- You want callers to depend on an **interface**, not concrete classes.
+- **Static factory methods** with descriptive names improve readability: `User.fromJSON(json)`, `Money.ofCents(500)`, `Date.parse()`.
+
+### Where you've seen it
+`document.createElement("div")`, `React.createElement`, `Promise.resolve()`, `Array.from()`, `express()`, ORMs creating model instances from rows, Java's `Calendar.getInstance()`.
+
+### Downsides
+An extra layer of indirection. Don't create a factory for a class with one implementation and a trivial constructor; `new Thing()` is fine.
 
 ---
 
 ## Abstract Factory
 
-**Intent:** Create **families of related objects** without specifying concrete classes.
+### The problem
+Sometimes you create **families of related objects that must be used together**, and you want to switch the entire family at once:
+- A UI toolkit: `Button`, `Checkbox`, `Modal`, all in **Light** theme or all in **Dark** theme (never a mix).
+- A cloud abstraction: `Storage`, `Queue`, `Secrets`, all on AWS or all on GCP.
+- Testing: all real implementations, or all in-memory fakes.
+
+If each part of the code chooses components individually, it's easy to accidentally mix families (a dark button in a light modal, or an AWS queue with a GCP storage client).
+
+### How it works
+Define a factory **interface** with one creation method per product. Each concrete factory produces a consistent family. The client receives one factory and creates everything through it.
 
 ```javascript
-// A UI kit factory produces matching components
-const lightTheme = { button: () => new LightButton(), modal: () => new LightModal() };
-const darkTheme  = { button: () => new DarkButton(),  modal: () => new DarkModal()  };
+// Two concrete factories implementing the same "interface"
+const awsFactory = {
+  createStorage: () => new S3Storage(),
+  createQueue:   () => new SqsQueue(),
+  createSecrets: () => new AwsSecretsManager(),
+};
 
-function renderPage(factory) {
-  const btn = factory.button();
-  const modal = factory.modal();    // guaranteed to match the button
+const inMemoryFactory = {           // for local dev and tests
+  createStorage: () => new InMemoryStorage(),
+  createQueue:   () => new InMemoryQueue(),
+  createSecrets: () => new EnvSecrets(),
+};
+
+// Application code is written once and works with either family
+function bootstrapApp(infra) {
+  const storage = infra.createStorage();
+  const queue = infra.createQueue();
+  return new UploadService(storage, queue);
 }
+
+const app = bootstrapApp(process.env.NODE_ENV === "test" ? inMemoryFactory : awsFactory);
 ```
 
-**Real uses:** cross-platform UI toolkits, swapping a family of cloud clients (AWS vs GCP storage + queue + DB), test vs prod object families.
+### Factory Method vs Abstract Factory
+| | Factory Method | Abstract Factory |
+|---|---|---|
+| Creates | **One** product | A **family** of related products |
+| Mechanism | One method (often overridden by subclasses) | An object with several creation methods |
+| Use when | "Which class do I instantiate?" | "Which *set* of classes do I instantiate, consistently?" |
+
+### Downside
+Adding a new **kind** of product (say `createCache()`) means updating every factory. Use it only when you truly have multiple families.
 
 ---
 
 ## Builder
 
-**Intent:** Construct a complex object **step by step**, separating construction from representation. Avoids "telescoping constructors" with 10 params.
+### The problem
+Some objects have **many parameters, most of them optional**, or must be assembled in **several steps**:
+
+```javascript
+// "Telescoping constructor": which argument is which?
+new HttpRequest("POST", "/orders", null, { "Content-Type": "application/json" }, body, 5000, true, 3, false);
+```
+- Call sites are unreadable and error-prone (arguments easy to swap).
+- You can't validate the *combination* of options until everything is set.
+- Partially built objects might be used by mistake.
+
+### How it works
+A separate **builder** object collects the configuration through readable, chainable methods, then a final `build()` validates everything and returns the finished (often **immutable**) object.
 
 ```javascript
 class HttpRequestBuilder {
-  #req = { method: "GET", headers: {}, query: {} };
-  url(u)            { this.#req.url = u; return this; }
-  method(m)         { this.#req.method = m; return this; }
-  header(k, v)      { this.#req.headers[k] = v; return this; }
-  body(b)           { this.#req.body = JSON.stringify(b); return this; }
+  #req = { method: "GET", headers: {}, timeoutMs: 10_000, retries: 0 };
+
+  url(u)          { this.#req.url = u; return this; }       // return this → chaining
+  method(m)       { this.#req.method = m; return this; }
+  header(k, v)    { this.#req.headers[k] = v; return this; }
+  json(body)      { this.#req.body = JSON.stringify(body); return this.header("Content-Type", "application/json"); }
+  timeout(ms)     { this.#req.timeoutMs = ms; return this; }
+  retries(n)      { this.#req.retries = n; return this; }
+
   build() {
-    if (!this.#req.url) throw new Error("url required");   // validate at the end
-    return Object.freeze({ ...this.#req });                  // immutable result
+    const r = this.#req;
+    if (!r.url) throw new Error("url is required");
+    if (r.method === "GET" && r.body) throw new Error("GET requests cannot have a body");  // cross-field validation
+    return Object.freeze({ ...r, headers: { ...r.headers } });                              // immutable result
   }
 }
 
-const req = new HttpRequestBuilder()
-  .url("/api/orders").method("POST")
-  .header("Authorization", "Bearer x")
-  .body({ sku: "KC-01", qty: 2 })
+const request = new HttpRequestBuilder()
+  .url("/api/orders")
+  .method("POST")
+  .header("Authorization", "Bearer token")
+  .json({ sku: "KC-01", qty: 2 })
+  .retries(3)
   .build();
 ```
 
-**Real uses:** query builders (Knex, SQLAlchemy), Java's `StringBuilder`, Lombok `@Builder`, test data builders (`aUser().withEmail(...).build()`).
+### In JavaScript: often an options object is enough
+```javascript
+createRequest({ url: "/api/orders", method: "POST", body, retries: 3 });
+```
+Named options already solve the readability problem. Use a real builder when you need **step-by-step construction**, **cross-field validation**, **immutability of the result**, or a **fluent DSL** (query builders).
+
+### When to use it
+- Many optional parameters, or construction in several steps.
+- Constructing complex things like SQL queries, HTTP requests, documents, test data.
+- You want the final object to be immutable and always valid.
+
+### Where you've seen it
+Query builders (Knex: `knex("users").where("age", ">", 18).orderBy("name").limit(10)`), Mongoose queries, Java's `StringBuilder` and Lombok's `@Builder`, Protocol Buffers builders, and **test data builders** (`aUser().withEmail("x@y.com").admin().build()`), which are very common in enterprise test suites.
 
 ---
 
 ## Prototype
 
-**Intent:** Create new objects by **cloning** an existing instance instead of constructing from scratch.
+### The problem
+Creating an object from scratch is sometimes **expensive** (loaded from a DB, parsed from a large config, computed) or **complicated** (many fields to set), and you need many similar copies with small variations.
+
+### How it works
+Keep a pre-configured **prototype** object and **clone** it, then tweak the copy.
 
 ```javascript
-const baseEnemy = { hp: 100, speed: 5, attack() { /* ... */ } };
-const fastEnemy = { ...structuredClone({ hp: baseEnemy.hp, speed: 10 }), attack: baseEnemy.attack };
-// JS itself is prototype-based: Object.create(proto)
-const goblin = Object.create(baseEnemy);
+const baseInvoice = {
+  currency: "USD",
+  terms: "Net 30",
+  company: { name: "KeycapAlley", address: "Seattle, WA" },
+  lineItems: [],
+};
+
+// Deep clone so copies don't share nested objects
+const invoiceA = structuredClone(baseInvoice);
+invoiceA.lineItems.push({ sku: "KC-01", qty: 2 });
+
+// Shallow copy pitfall:
+const invoiceB = { ...baseInvoice };
+invoiceB.company.name = "Oops";   // ⚠️ also changes baseInvoice.company.name (shared reference)
 ```
 
-**When:** object creation is expensive (loaded from DB/config) and you need many similar copies. Watch out for **shallow vs deep copy** bugs.
+JavaScript itself is a **prototype-based** language: objects inherit directly from other objects (`Object.create(proto)`), and `class` syntax is built on top of that.
+
+### When to use it
+- Object creation is costly and copies are cheap.
+- You have a few "preset" configurations (document templates, game entity archetypes like "goblin," "orc").
+- You want to create objects without coupling to their concrete classes.
+
+### Downside
+**Shallow vs deep copy bugs** (shown above). Cloning objects with circular references, functions, or class instances needs care (`structuredClone` doesn't copy functions or class prototypes).
 
 ---
 
-## Related: Object Pool
+## Related: Object Pool (not GoF, very common in backend work)
 
-Not GoF, but commonly discussed. Reuse expensive objects (DB connections, threads) instead of creating and destroying them. **DB connection pools** are everywhere in backend work. A pool size that's too small causes queueing; too large overloads the DB.
+### The problem
+Some objects are **expensive to create and destroy**: database connections (TCP + TLS handshake + authentication can take tens of milliseconds), threads, large buffers. Creating one per request would add latency and could overwhelm the server (Postgres handles each connection with a separate OS process).
+
+### How it works
+Keep a pool of ready-made objects. A request **borrows** one, uses it, and **returns** it. If none are available, the request waits (up to a timeout) or the pool grows to a maximum size.
+
+```javascript
+const pool = new Pool({ max: 20, idleTimeoutMillis: 30_000 });
+const client = await pool.connect();   // borrow
+try {
+  await client.query("SELECT ...");
+} finally {
+  client.release();                     // return (always, even on error)
+}
+```
+
+### Tuning matters
+- **Too small**: requests queue waiting for a connection → latency spikes.
+- **Too large**: the database is overwhelmed by connections (each uses memory) → everything slows down.
+- With many app instances, total connections = instances × pool size. That's why tools like **PgBouncer** (a connection pooler in front of Postgres) exist.
 
 ---
 
-## Comparison
+## Comparison: which creational pattern?
 
-| Pattern | Use when you need… | Example |
-|---|---|---|
-| Singleton | exactly one shared instance | Logger, config |
-| Factory Method | to choose a concrete class at runtime | `NotificationFactory.create("sms")` |
-| Abstract Factory | families of matching objects | Light/Dark UI kits |
-| Builder | many optional params / step-wise construction | HTTP request, query builder |
-| Prototype | cheap copies of a preconfigured object | Game entities, document templates |
+| Pattern | Solves | Signal you need it | Example |
+|---|---|---|---|
+| **Singleton** | Exactly one shared instance | Duplicates would be wrong (pool, config) | `db.js` exporting one pool |
+| **Factory Method / Simple Factory** | Choosing which class to create at runtime; hiding construction details | `if/else` on a type to decide what to `new` | `createNotifier("sms")` |
+| **Abstract Factory** | Creating consistent families of objects | Need to switch a whole set of implementations together | AWS vs in-memory infra |
+| **Builder** | Readable, validated construction of complex objects | Many optional params; multi-step construction | Query builders, test data builders |
+| **Prototype** | Cheap copies of preconfigured objects | Expensive creation, many similar objects | Document templates |
+| **Object Pool** | Reusing expensive resources | Costly setup per use | DB connection pools |
 
-## Self-test
-- [ ] Why is Singleton often called an anti-pattern? What's the alternative?
-- [ ] Factory vs Abstract Factory: what's the difference?
-- [ ] When would you choose Builder over a constructor with an options object (in JS, the options object often suffices)?
+---
+
+## Quick self-test
+- [ ] Why is Singleton often called an anti-pattern? What would you use instead, and how does it fix testing?
+- [ ] How does Node's module system give you singleton behavior?
+- [ ] Rewrite an `if/else` of `new X()` calls as a registry-based factory. Which SOLID principle improves?
+- [ ] Factory Method vs Abstract Factory: what's the difference, with an example of each?
+- [ ] When is a plain options object enough in JS, and when would you still use a Builder?
+- [ ] What's the shallow-copy bug with Prototype?
+- [ ] Why does connection pool size matter, both too small and too large?
 
 Next: [[Structural Patterns]]

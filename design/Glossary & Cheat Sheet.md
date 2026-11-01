@@ -5,7 +5,7 @@ aliases: [Design Glossary, Design Cheat Sheet]
 # Glossary & Cheat Sheet
 
 > [!summary]
-> Quick definitions to review before an interview. Each links to its deeper note. Use Obsidian's search (Ctrl+Shift+F) or the outline pane to jump.
+> Quick definitions to review before an interview. This page is deliberately terse: each term links to the note where it's **explained in full** (what problem it solves, how it works, when to use it). Use it to check yourself: if a definition doesn't trigger a full explanation in your head, open the linked note.
 
 Back to [[Design Index]]
 
@@ -30,7 +30,9 @@ Back to [[Design Index]]
 | Term | Meaning | Note |
 |---|---|---|
 | **ACID** | Atomicity, Consistency, Isolation, Durability | [[Databases & Storage]] |
+| **ADR** | Architecture Decision Record: short, immutable doc of one decision | [[Design Docs & Code Review]] |
 | **Aggregate** | DDD consistency boundary with a root entity | [[Domain-Driven Design]] |
+| **Anti-Corruption Layer** | Translation layer protecting your model from a messy external/legacy one | [[Domain-Driven Design]] |
 | **API Gateway** | Single entry point: routing, auth, rate limiting | [[Networking Essentials]] |
 | **Availability** | % of time the system is usable (nines) | [[Scalability & Core Concepts]] |
 | **Backpressure** | Downstream signals upstream to slow down | [[Scalability & Core Concepts]] |
@@ -47,20 +49,30 @@ Back to [[Design Index]]
 | **Circuit breaker** | Stop calling a failing dependency; fail fast | [[Reliability & Observability]] |
 | **Cohesion / Coupling** | Focus within a module / dependency between modules | [[OOP Fundamentals]] |
 | **Consistent hashing** | Hash ring; adding a node moves only ~K/N keys | [[Distributed Systems Patterns]] |
+| **Consumer group** | Kafka consumers sharing a topic's partitions; each group reads everything | [[Messaging & Event Streaming]] |
+| **Count-Min Sketch** | Approximate frequency counts; used for top-K / trending | [[Distributed Systems Patterns]] |
 | **CQRS** | Separate write and read models | [[Architectural Styles]] |
 | **CRDT** | Data types that merge concurrent edits automatically | [[Distributed Systems Patterns]] |
+| **CSRF** | Cross-site request forgery: another site triggers your authenticated request | [[Security Fundamentals]] |
+| **Dead Letter Queue** | Where messages go after repeated processing failures | [[Messaging & Event Streaming]] |
 | **Denormalization** | Duplicate data for faster reads | [[Databases & Storage]] |
 | **Dependency Injection** | Pass dependencies in rather than creating them | [[OOP Fundamentals]] |
 | **DLQ** | Dead letter queue for repeatedly failing messages | [[Messaging & Event Streaming]] |
+| **DORA metrics** | Deploy frequency, lead time, change failure rate, time to restore | [[CI-CD & Deployment]] |
 | **Error budget** | 100% − SLO; allowed unreliability | [[Reliability & Observability]] |
 | **Event sourcing** | Store events as the source of truth | [[Architectural Styles]] |
 | **Eventual consistency** | Replicas converge if writes stop | [[Scalability & Core Concepts]] |
+| **Expand / contract migration** | Zero-downtime schema change in backward-compatible phases | [[CI-CD & Deployment]] |
 | **Fan-out on write/read** | Push to followers' feeds vs pull at read time | [[Design a News Feed]] |
 | **Feature flag** | Toggle features without deploying | [[CI-CD & Deployment]] |
+| **Fencing token** | Increasing number that lets storage reject writes from a stale lock holder | [[Distributed Systems Patterns]] |
+| **Geohash** | Encodes lat/lng so shared prefixes mean nearby; proximity search | [[Distributed Systems Patterns]] |
 | **Gossip protocol** | Peer-to-peer state dissemination | [[Distributed Systems Patterns]] |
 | **Horizontal scaling** | Add more machines | [[Scalability & Core Concepts]] |
 | **Hot spot / hot key** | Disproportionate load on one shard/key | [[Scalability & Core Concepts]] |
+| **HyperLogLog** | Approximate distinct counts in ~12 KB | [[Distributed Systems Patterns]] |
 | **Idempotency** | Repeating an operation has the same effect | [[Distributed Systems Patterns]] |
+| **IDOR** | Insecure direct object reference: missing ownership check on /resource/:id | [[Security Fundamentals]] |
 | **Isolation levels** | Read committed, repeatable read, serializable... | [[Databases & Storage]] |
 | **JWT** | Signed, stateless token with claims | [[Security Fundamentals]] |
 | **Kafka** | Partitioned, replicated, replayable log | [[Messaging & Event Streaming]] |
@@ -69,6 +81,7 @@ Back to [[Design Index]]
 | **Linearizability** | Strongest consistency; reads see the latest write | [[Scalability & Core Concepts]] |
 | **Little's Law** | L = λW | [[Scalability & Core Concepts]] |
 | **LSM tree** | Write-optimized storage (memtable + SSTables) | [[Databases & Storage]] |
+| **mTLS** | Mutual TLS: both client and server present certificates | [[Security Fundamentals]] |
 | **MVCC** | Multi-version concurrency; readers don't block writers | [[Databases & Storage]] |
 | **N+1 problem** | 1 query for a list + N queries for related items | [[Databases & Storage]] |
 | **OAuth 2.0 / OIDC** | Delegated authorization / authentication on top | [[Security Fundamentals]] |
@@ -76,6 +89,7 @@ Back to [[Design Index]]
 | **Outbox pattern** | Write event to DB table in same txn, relay to broker | [[Messaging & Event Streaming]] |
 | **p99 latency** | 99th percentile response time | [[Scalability & Core Concepts]] |
 | **PACELC** | CAP + latency vs consistency when no partition | [[Scalability & Core Concepts]] |
+| **PKCE** | Proof Key for Code Exchange: protects the OAuth authorization code flow | [[Security Fundamentals]] |
 | **Presigned URL** | Temporary URL for direct upload/download to object storage | [[Databases & Storage]] |
 | **Quorum** | W + R > N ensures read/write overlap | [[Databases & Storage]] |
 | **Raft / Paxos** | Consensus algorithms | [[Distributed Systems Patterns]] |
@@ -89,12 +103,16 @@ Back to [[Design Index]]
 | **Snowflake ID** | 64-bit time-sortable distributed ID | [[Distributed Systems Patterns]] |
 | **SOLID** | SRP, OCP, LSP, ISP, DIP | [[SOLID Principles]] |
 | **SPOF** | Single point of failure | [[Scalability & Core Concepts]] |
+| **Strangler Fig** | Incrementally replace a monolith by routing features to new services | [[Architectural Styles]] |
+| **Test double** | Dummy, stub, fake, spy, or mock replacing a real dependency in tests | [[Testing Strategy]] |
 | **Thundering herd / stampede** | Many requests at once after expiry/restart | [[Caching]] |
 | **Token bucket** | Rate-limit algorithm allowing bursts | [[Design a Rate Limiter]] |
 | **Two-phase commit** | Blocking atomic commit across nodes | [[Distributed Systems Patterns]] |
+| **Value object** | Immutable object defined by its attributes (Money, Address) | [[Domain-Driven Design]] |
 | **Vertical scaling** | Bigger machine | [[Scalability & Core Concepts]] |
 | **WebSocket** | Persistent full-duplex connection | [[API Design]] |
 | **Write-through / write-behind** | Sync vs async cache+DB writes | [[Caching]] |
+| **XSS** | Cross-site scripting: attacker script runs in other users' browsers | [[Security Fundamentals]] |
 
 ---
 

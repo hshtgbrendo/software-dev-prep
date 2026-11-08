@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "showExplorerProtectionIndicators": false,
+  "forceAllMarkdownReadOnly": true,
+  "useGlobPatterns": false,
+  "caseSensitive": true,
+  "debug": false,
+  "debugVerbosePaths": false,
+  "dismissedWelcomeVersion": 1,
+  "includeRules": [],
+  "excludeRules": [],
+  "includeRuleEnabled": [],
+  "excludeRuleEnabled": [],
+  "includeRuleEntries": [],
+  "excludeRuleEntries": []
+}
